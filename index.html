@@ -3,125 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>出差軌跡照片 GIS系統</title>
+    <title>外業專用照片 GIS</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --primary-color: #007bff; }
-        body { margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; font-family: sans-serif; overflow: hidden; }
+        :root { --btn-height: 50px; }
+        body { margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; font-family: -apple-system, sans-serif; background: #1a1a1a; }
         
-        /* 頂部控制區 */
-        #header { background: #333; color: white; padding: 10px; z-index: 1001; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-        .controls { display: flex; gap: 10px; align-items: center; overflow-x: auto; white-space: nowrap; }
+        /* 頂部大型按鈕區 (方便手指點擊) */
+        #ui-top { background: #333; padding: 10px; z-index: 1001; display: flex; flex-direction: column; gap: 8px; }
+        .btn-row { display: flex; gap: 8px; width: 100%; }
         
-        /* 地圖區域 */
-        #main-container { flex: 1; display: flex; position: relative; overflow: hidden; }
-        #map { flex: 1; height: 100%; }
+        .main-btn { 
+            flex: 1; height: var(--btn-height); border-radius: 8px; border: none; 
+            font-size: 16px; font-weight: bold; color: white; display: flex; 
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+        .cam-btn { background: #28a745; } /* 綠色拍照 */
+        .folder-btn { background: #007bff; } /* 藍色選取 */
+        .clear-btn { background: #6c757d; width: 80px; font-size: 14px; }
 
-        /* 照片快速找位置清單 (手機隱藏，點擊展開) */
-        #photo-list { 
-            width: 120px; background: #f0f0f0; border-left: 1px solid #ccc; 
-            overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding: 5px;
-        }
-        .list-item { 
-            width: 100%; aspect-ratio: 1; background: #ddd; border-radius: 4px; 
-            cursor: pointer; position: relative; overflow: hidden; border: 2px solid transparent;
-        }
+        #main-container { flex: 1; display: flex; position: relative; overflow: hidden; background: white; }
+        #map { flex: 1; }
+        
+        /* 側邊清單優化 */
+        #photo-list { width: 70px; background: #222; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+        .list-item { width: 100%; aspect-ratio: 1; border-radius: 4px; overflow: hidden; position: relative; border: 2px solid transparent; }
         .list-item img { width: 100%; height: 100%; object-fit: cover; }
-        .list-item span { 
-            position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.6); 
-            color: white; font-size: 10px; padding: 2px 4px; border-radius: 3px; 
-        }
-        .list-item.active { border-color: var(--primary-color); }
-
-        /* 點位編號樣式 */
-        .number-marker {
-            background: var(--primary-color); color: white; border: 2px solid white;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-        }
-
-        /* 彈窗圖片 */
-        .popup-content { text-align: center; width: 220px; }
-        .popup-img { width: 100%; border-radius: 5px; margin-top: 5px; }
-        .direction-box { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; font-weight: bold; }
-        .compass-arrow { font-size: 24px; display: inline-block; color: red; }
-
-        /* 手機適應 */
-        @media (max-width: 600px) {
-            #photo-list { width: 80px; }
-            #header { font-size: 14px; }
-        }
+        .list-item span { position: absolute; top: 0; left: 0; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 2px; }
+        
+        /* 編號樣式 */
+        .number-marker { background: #ff2d55; color: white; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
+        
+        .popup-img { width: 100%; max-width: 240px; border-radius: 4px; }
+        #status-bar { color: #aaa; font-size: 12px; text-align: center; }
+        
+        /* 隱藏原生 input */
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
 
-<div id="header">
-    <div class="controls">
-        <strong>📍 軌跡圖台</strong>
-        <input type="file" id="upload" accept="image/*" multiple style="width: 150px;">
-        <button onclick="locateUser()">定位</button>
-        <button onclick="clearAll()">清除</button>
-        <span id="status">待機</span>
+<div id="ui-top">
+    <div class="btn-row">
+        <!-- 現場拍照按鈕 -->
+        <button class="main-btn cam-btn" onclick="document.getElementById('input-cam').click()">📸 現場拍照</button>
+        <!-- 從相簿選取 -->
+        <button class="main-btn folder-btn" onclick="document.getElementById('input-folder').click()">📂 相簿匯入</button>
+        <button class="clear-btn" onclick="clearAll()">清除</button>
     </div>
+    <div id="status-bar">點擊按鈕開始記錄軌跡</div>
 </div>
+
+<!-- 隱藏的 Input -->
+<input type="file" id="input-cam" accept="image/*" capture="camera">
+<input type="file" id="input-folder" accept="image/*" multiple>
 
 <div id="main-container">
     <div id="map"></div>
-    <div id="photo-list" title="點擊縮圖快速跳轉位置"></div>
+    <div id="photo-list"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exifr@7.1.3/dist/full.umd.js"></script>
 
 <script>
-    // 1. 初始化地圖
     const map = L.map('map', { zoomControl: false }).setView([23.5, 121], 7);
-    L.control.zoom({ position: 'bottomleft' }).addTo(map);
-
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-    L.control.layers({ "街道圖": osm, "衛星圖": satellite }).addTo(map);
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+    L.control.layers({ "街道": osm, "衛星": sat }, null, { position: 'bottomleft' }).addTo(map);
 
     let photosData = [];
     const markerGroup = L.layerGroup().addTo(map);
-    const trackLine = L.polyline([], { color: '#007bff', weight: 3, opacity: 0.6, dashArray: '5, 10' }).addTo(map);
+    const trackLine = L.polyline([], { color: '#ff2d55', weight: 3, opacity: 0.6 }).addTo(map);
 
-    // 2. 處理上傳
-    document.getElementById('upload').addEventListener('change', async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-        
-        document.getElementById('status').innerText = "解析中...";
-        photosData = []; // 重置
-
-        for (const file of files) {
-            try {
-                // 解析 GPS、時間與拍照方向
-                const exif = await exifr.parse(file, { gps: true, device: true, timestamp: true });
-                if (exif && exif.latitude) {
-                    photosData.push({
-                        lat: exif.latitude,
-                        lng: exif.longitude,
-                        time: exif.DateTimeOriginal || new Date(file.lastModified),
-                        heading: exif.GPSImgDirection || 0,
-                        url: URL.createObjectURL(file) // 使用物件網址節省記憶體
-                    });
-                }
-            } catch (err) { console.error("解析錯誤", err); }
-        }
-
-        // 按時間排序
-        photosData.sort((a, b) => a.time - b.time);
-        renderData();
+    // 處理上傳事件
+    [document.getElementById('input-cam'), document.getElementById('input-folder')].forEach(input => {
+        input.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            
+            document.getElementById('status-bar').innerText = "處理中 (壓縮並解析)...";
+            
+            for (const file of files) {
+                try {
+                    const exif = await exifr.parse(file, { gps: true, device: true, timestamp: true });
+                    if (exif && exif.latitude) {
+                        // ⚡ 關鍵優化：前端自動壓縮圖片
+                        const thumbUrl = await compressImage(file);
+                        
+                        photosData.push({
+                            lat: exif.latitude,
+                            lng: exif.longitude,
+                            time: exif.DateTimeOriginal || new Date(file.lastModified),
+                            heading: exif.GPSImgDirection || 0,
+                            url: thumbUrl
+                        });
+                    } else {
+                        alert("部分照片缺少 GPS 資訊，將無法顯示。");
+                    }
+                } catch (err) { console.error(err); }
+            }
+            photosData.sort((a, b) => a.time - b.time);
+            renderData();
+        });
     });
 
-    // 3. 渲染點位、線條與清單
+    // ⚡ 壓縮引擎：將大圖轉為小圖以節省效能
+    function compressImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const max_size = 800; // 壓縮至最大 800px，這對手機顯示綽綽有餘
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > max_size) { height *= max_size / width; width = max_size; }
+                    } else {
+                        if (height > max_size) { width *= max_size / height; height = max_size; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% 畫質壓縮
+                };
+            };
+        });
+    }
+
     function renderData() {
         markerGroup.clearLayers();
         trackLine.setLatLngs([]);
         const listEl = document.getElementById('photo-list');
         listEl.innerHTML = '';
-
         const latlngs = [];
 
         photosData.forEach((data, index) => {
@@ -129,65 +147,50 @@
             const pos = [data.lat, data.lng];
             latlngs.push(pos);
 
-            // A. 建立點位
             const icon = L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div class="number-marker">${num}</div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                className: '',
+                html: `<div class="number-marker" style="width:28px; height:28px;">${num}</div>`,
+                iconSize: [28, 28], iconAnchor: [14, 14]
             });
 
             const marker = L.marker(pos, { icon }).addTo(markerGroup);
-
-            // B. 建立彈窗 (含方向角顯示)
-            const popupContent = `
-                <div class="popup-content">
-                    <strong>第 ${num} 站</strong><br>
-                    <small>${data.time.toLocaleString()}</small>
-                    <img src="${data.url}" class="popup-img" onclick="window.open('${data.url}')">
-                    <div class="direction-box">
-                        <span>拍攝方向：${Math.round(data.heading)}°</span>
-                        <span class="compass-arrow" style="transform: rotate(${data.heading}deg)">⬆</span>
-                    </div>
+            marker.bindPopup(`
+                <div style="text-align:center">
+                    <b>第 ${num} 點</b><br>
+                    <img src="${data.url}" class="popup-img"><br>
+                    <span style="font-size:20px; display:inline-block; transform:rotate(${data.heading}deg)">⬆</span>
+                    方向: ${Math.round(data.heading)}°
                 </div>
-            `;
-            marker.bindPopup(popupContent);
+            `);
 
-            // C. 建立側邊清單
             const item = document.createElement('div');
             item.className = 'list-item';
             item.innerHTML = `<span>${num}</span><img src="${data.url}">`;
-            item.onclick = () => {
-                map.flyTo(pos, 17);
-                marker.openPopup();
-                document.querySelectorAll('.list-item').forEach(el => el.classList.remove('active'));
-                item.classList.add('active');
-            };
+            item.onclick = () => { map.flyTo(pos, 18); marker.openPopup(); };
             listEl.appendChild(item);
         });
 
-        // 更新軌跡線
         trackLine.setLatLngs(latlngs);
-        if (latlngs.length > 0) map.fitBounds(trackLine.getBounds(), { padding: [50, 50] });
-        document.getElementById('status').innerText = `完成 (${photosData.length}個點)`;
+        if (latlngs.length > 0) map.fitBounds(trackLine.getBounds(), { padding: [40, 40] });
+        document.getElementById('status-bar').innerText = `已匯入 ${photosData.length} 張照片`;
     }
-
-    // 定位功能
-    function locateUser() {
-        map.locate({ setView: true, maxZoom: 16 });
-    }
-
-    map.on('locationfound', (e) => {
-        L.marker(e.latlng).addTo(markerGroup).bindPopup("目前位置").openPopup();
-    });
 
     function clearAll() {
-        photosData.forEach(p => URL.revokeObjectURL(p.url)); // 釋放記憶體
         photosData = [];
         markerGroup.clearLayers();
         trackLine.setLatLngs([]);
         document.getElementById('photo-list').innerHTML = '';
-        document.getElementById('status').innerText = "已清除";
+        document.getElementById('status-bar').innerText = "已清除";
+    }
+
+    function clearAll() {
+        if(confirm("確定要清除所有照片與軌跡嗎？")) {
+            photosData = [];
+            markerGroup.clearLayers();
+            trackLine.setLatLngs([]);
+            document.getElementById('photo-list').innerHTML = '';
+            document.getElementById('status-bar').innerText = "已清除";
+        }
     }
 </script>
 </body>
