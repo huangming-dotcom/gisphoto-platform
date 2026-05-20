@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>專業現勘調查報告系統 v3.7</title>
+    <title>專業現勘調查報告系統 v3.8</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -24,46 +24,27 @@
         #map { flex: 1; height: 100%; z-index: 1; background: #fff; }
         #photo-list { width: 95px; background: #222; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         
-        .list-thumb { width: 100%; aspect-ratio: 1; border-radius: 4px; object-fit: cover; border: 2px solid transparent; cursor: pointer; }
-        
+        .list-thumb { width: 100%; aspect-ratio: 1; border-radius: 4px; object-fit: cover; cursor: pointer; }
         .marker-container { position: relative; width: 34px; height: 34px; }
-        .number-marker { 
-            background: var(--danger); color: white; border: 2px solid white; border-radius: 50%; 
-            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; font-size: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            position: relative; z-index: 2;
-        }
-        .heading-pointer {
-            position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
-            border-bottom: 10px solid white; z-index: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
-        }
-        
-        .cluster-text-icon { 
-            background: #f39c12; color: white; border: 2.5px solid white; border-radius: 18px; 
-            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; padding: 4px;
-            white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-        }
+        .number-marker { background: var(--danger); color: white; border: 2px solid white; border-radius: 50%; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; }
+        .heading-pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid white; }
+        .cluster-text-icon { background: #f39c12; color: white; border: 2.5px solid white; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; padding: 4px; white-space: nowrap; }
 
-        .popup-box { width: 230px; color: #333; }
-        .popup-img { width: 100%; border-radius: 4px; margin: 5px 0; }
-        .note-area { width: 100%; height: 70px; margin-top: 5px; font-size: 14px; color: #000; border: 1px solid #ccc; padding: 5px; box-sizing: border-box; }
-
-        /* 報表系統優化 */
+        /* 報表區塊 */
         #report-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; overflow-y: auto; color: black; padding: 0; }
-        .report-page { page-break-after: always; width: 100%; max-width: 900px; margin: 0 auto; padding: 30px; box-sizing: border-box; position: relative; }
-        #report-map-snap { width: 100%; height: auto; max-height: 800px; border: 2px solid #333; margin: 15px 0; display: block; }
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
-        .report-item { border: 1px solid #ddd; padding: 15px; border-radius: 5px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; page-break-inside: avoid; background: #fff; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
+        .report-page { page-break-after: always; width: 100%; max-width: 900px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        #report-map-snap { width: 100%; height: auto; border: 2px solid #333; margin: 15px 0; display: block; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .report-item { border: 1px solid #ddd; padding: 12px; border-radius: 5px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; page-break-inside: avoid; background: #fff; }
         .report-item img { width: 100%; height: 160px; object-fit: cover; border-radius: 3px; }
         .report-title { font-weight: bold; font-size: 26px; color: var(--primary); border-bottom: 4px solid var(--primary); padding-bottom: 10px; margin-bottom: 15px; text-align: center; }
 
+        /* 重要：修復 iOS 列印問題的 CSS */
         @media print {
-            body * { visibility: hidden; }
-            #report-overlay, #report-overlay * { visibility: visible; }
-            #report-overlay { position: absolute; left: 0; top: 0; width: 100% !important; height: auto !important; }
-            .no-print { display: none !important; }
-            .report-page { padding: 10px; }
+            body, html { height: auto !important; overflow: visible !important; }
+            #ui-header, #main-view, .no-print { display: none !important; }
+            #report-overlay { display: block !important; position: relative !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+            .report-page { padding: 0 !important; margin: 0 !important; width: 100% !important; }
         }
         input[type="file"] { display: none; }
     </style>
@@ -74,7 +55,7 @@
     <div class="btn-group">
         <button class="btn btn-blue" onclick="document.getElementById('file-input').click()">📸 匯入照片</button>
         <button class="btn btn-green" onclick="generateReport()">📄 產生現勘報告</button>
-        <button class="btn btn-red" onclick="if(confirm('確定清除所有現勘數據？')) location.reload()">🔄 重置系統</button>
+        <button class="btn btn-red" onclick="if(confirm('確定清除？')) location.reload()">🔄 重置</button>
     </div>
 </div>
 
@@ -86,8 +67,9 @@
 </div>
 
 <div id="report-overlay">
-    <div class="no-print" style="position: sticky; top: 0; background: #eee; padding: 15px; border-bottom: 2px solid #ccc; display: flex; gap: 10px; z-index: 100;">
+    <div class="no-print" style="padding: 15px; background: #eee; border-bottom: 2px solid #ccc; display: flex; gap: 10px;">
         <button class="btn btn-red" onclick="document.getElementById('report-overlay').style.display='none'">⬅ 返回編輯</button>
+        <!-- iOS 修正：直接呼叫 window.print() 並移除所有異步干擾 -->
         <button class="btn btn-green" onclick="window.print()">🖨️ 確認列印 / 存為 PDF</button>
     </div>
     <div id="report-content"></div>
@@ -100,41 +82,22 @@
 
 <script>
     const map = L.map('map', { zoomControl: false }).setView([23.5, 121], 7);
-    
-    // 底圖 1: OSM
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-        crossOrigin: 'anonymous', attribution: '&copy; OSM' 
-    }).addTo(map);
-
-    // 底圖 2: Satellite
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { 
-        crossOrigin: 'anonymous', attribution: 'Tiles &copy; Esri' 
-    });
-
-    L.control.layers({ "標準地圖 (OSM)": osm, "衛星影像 (Esri)": satellite }, null, { position: 'bottomleft' }).addTo(map);
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { crossOrigin: 'anonymous' }).addTo(map);
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { crossOrigin: 'anonymous' });
+    L.control.layers({ "標準地圖": osm, "衛星影像": satellite }, null, { position: 'bottomleft' }).addTo(map);
 
     let photosData = [];
-    
-    const clusters = L.markerClusterGroup({
-        zoomToBoundsOnClick: false,
-        spiderfyOnMaxZoom: false,
+    const clusters = L.markerClusterGroup({ zoomToBoundsOnClick: false, spiderfyOnMaxZoom: false,
         iconCreateFunction: function(cluster) {
             const markers = cluster.getAllChildMarkers();
             const indices = markers.map(m => m.options.index).sort((a,b) => a-b);
             const label = indices.join(', ');
             const width = Math.max(35, label.length * 10 + 12);
-            return L.divIcon({ 
-                html: `<div class="cluster-text-icon" style="width:${width}px; height:36px;">${label}</div>`, 
-                className: '', 
-                iconSize: [width, 36] 
-            });
+            return L.divIcon({ html: `<div class="cluster-text-icon" style="width:${width}px; height:36px;">${label}</div>`, className: '', iconSize: [width, 36] });
         }
     });
     map.addLayer(clusters);
-
-    clusters.on('clusterclick', function (a) {
-        if (a.layer._spiderfied) { a.layer.unspiderfy(); } else { a.layer.spiderfy(); }
-    });
+    clusters.on('clusterclick', a => { if (a.layer._spiderfied) { a.layer.unspiderfy(); } else { a.layer.spiderfy(); } });
 
     document.getElementById('file-input').addEventListener('change', async (e) => {
         const files = Array.from(e.target.files);
@@ -143,12 +106,7 @@
                 const exif = await exifr.parse(file, { gps: true, timestamp: true });
                 if (exif && exif.latitude) {
                     const thumb = await compressImage(file);
-                    photosData.push({
-                        lat: exif.latitude, lng: exif.longitude,
-                        time: exif.DateTimeOriginal || new Date(file.lastModified),
-                        url: thumb, note: "", name: file.name,
-                        heading: exif.GPSImgDirection || 0
-                    });
+                    photosData.push({ lat: exif.latitude, lng: exif.longitude, time: exif.DateTimeOriginal || new Date(file.lastModified), url: thumb, note: "", name: file.name, heading: exif.GPSImgDirection || 0 });
                 }
             } catch (err) { console.error(err); }
         }
@@ -167,8 +125,7 @@
                     const canvas = document.createElement('canvas');
                     const size = 1200;
                     let w = img.width, h = img.height;
-                    if (w > h) { if (w > size) { h *= size / w; w = size; } }
-                    else { if (h > size) { w *= size / h; h = size; } }
+                    if (w > h) { if (w > size) { h *= size / w; w = size; } } else { if (h > size) { w *= size / h; h = size; } }
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                     res(canvas.toDataURL('image/jpeg', 0.85));
@@ -183,38 +140,12 @@
         list.innerHTML = '';
         photosData.forEach((d, i) => {
             const num = i + 1;
-            const marker = L.marker([d.lat, d.lng], {
-                index: num, draggable: true,
-                icon: L.divIcon({
-                    className: '',
-                    html: `
-                        <div class="marker-container" style="transform: rotate(${d.heading}deg)">
-                            <div class="heading-pointer"></div>
-                            <div class="number-marker" style="transform: rotate(${-d.heading}deg)">${num}</div>
-                        </div>
-                    `,
-                    iconSize: [34, 34], iconAnchor: [17, 17]
-                })
+            const marker = L.marker([d.lat, d.lng], { index: num, draggable: true,
+                icon: L.divIcon({ className: '', html: `<div class="marker-container" style="transform: rotate(${d.heading}deg)"><div class="heading-pointer"></div><div class="number-marker" style="transform: rotate(${-d.heading}deg)">${num}</div></div>`, iconSize: [34, 34], iconAnchor: [17, 17] })
             });
-
-            marker.on('dragend', function(e) {
-                const newLatLng = e.target.getLatLng();
-                d.lat = newLatLng.lat; d.lng = newLatLng.lng;
-                render();
-            });
-
-            marker.bindPopup(`
-                <div class="popup-box">
-                    <strong>NO.${num}</strong> | <small>${d.time.toLocaleString()}</small>
-                    <img src="${d.url}" class="popup-img">
-                    <div style="font-size:13px; color:#ff2d55; font-weight:bold;">
-                        現勘方位：<span style="display:inline-block; transform:rotate(${d.heading}deg)">⬆</span> ${Math.round(d.heading)}°
-                    </div>
-                    <textarea class="note-area" onchange="updateNote(${i}, this.value)" placeholder="輸入現勘筆記...">${d.note}</textarea>
-                </div>
-            `);
+            marker.on('dragend', e => { const n = e.target.getLatLng(); d.lat = n.lat; d.lng = n.lng; render(); });
+            marker.bindPopup(`<div class="popup-box"><strong>NO.${num}</strong><img src="${d.url}" class="popup-img"><textarea class="note-area" onchange="updateNote(${i}, this.value)" placeholder="輸入備註...">${d.note}</textarea></div>`);
             clusters.addLayer(marker);
-            
             const img = document.createElement('img');
             img.src = d.url; img.className = 'list-thumb';
             img.onclick = () => { map.flyTo([d.lat, d.lng], 18); clusters.zoomToShowLayer(marker, () => marker.openPopup()); };
@@ -225,57 +156,26 @@
 
     window.updateNote = (index, val) => { photosData[index].note = val; };
 
-    // 📄 產生報告邏輯 (修正每頁標題問題)
     async function generateReport() {
         if (photosData.length === 0) return alert("請先匯入照片");
         clusters.unspiderfy();
         map.fitBounds(clusters.getBounds().pad(0.15));
-        
         const dates = [...new Set(photosData.map(d => d.time.toLocaleDateString()))].sort();
         const reportDateStr = dates.length > 1 ? `${dates[0]} - ${dates[dates.length-1]}` : dates[0];
-
-        document.getElementById('report-content').innerHTML = "<h2 style='text-align:center; padding-top:100px;'>正在產出高解析度現勘報告，請稍候...</h2>";
+        document.getElementById('report-content').innerHTML = "<h2 style='text-align:center; padding-top:100px;'>正在產出報告，請稍候...</h2>";
         document.getElementById('report-overlay').style.display = 'block';
-
         await new Promise(r => setTimeout(r, 1500));
-
         const mapElement = document.getElementById('map');
-        const canvas = await html2canvas(mapElement, { 
-            useCORS: true, scale: 2, logging: false,
-            ignoreElements: (el) => el.classList.contains('leaflet-control-container')
-        });
+        const canvas = await html2canvas(mapElement, { useCORS: true, scale: 2, logging: false, ignoreElements: el => el.classList.contains('leaflet-control-container') });
         const mapImgData = canvas.toDataURL('image/png');
-
-        let html = `<div class="report-page">
-            <h1 class="report-title">現勘調查報告書</h1>
-            <p style="text-align:center; font-size: 16px;">現勘調查日期：${reportDateStr} | 總現勘站數：${photosData.length} 站</p>
-            <div style="text-align:center; font-weight:bold; margin-bottom:5px;">[ 現勘區域總覽地圖 ]</div>
-            <img id="report-map-snap" src="${mapImgData}">
-        </div>`;
-
-        // 【修正核心】為了確保每一頁 A4 都有標題，我們將每頁數量設為 4 或 6
-        // 根據您的照片大小，設為 4 張一頁是最整齊的排版。
-        const itemsPerPage = 4; 
+        let html = `<div class="report-page"><h1 class="report-title">現勘調查報告書</h1><p style="text-align:center">現勘日期：${reportDateStr}</p><img id="report-map-snap" src="${mapImgData}"></div>`;
+        const itemsPerPage = 4;
         for (let i = 0; i < photosData.length; i += itemsPerPage) {
             const pageItems = photosData.slice(i, i + itemsPerPage);
-            const currentPageNum = Math.floor(i / itemsPerPage) + 1;
-            
-            html += `<div class="report-page">
-                <div class="report-title" style="font-size:18px; border-bottom: 2px solid var(--primary);">現勘紀錄明細 (第 ${currentPageNum} 頁)</div>
-                <div class="report-grid">`;
-            
+            html += `<div class="report-page"><div class="report-title" style="font-size:18px;">現勘紀錄明細 (第 ${Math.floor(i/itemsPerPage)+1} 頁)</div><div class="report-grid">`;
             pageItems.forEach((d, idx) => {
                 const gIdx = i + idx + 1;
-                html += `
-                    <div class="report-item">
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:5px;">
-                            <strong>[ ${gIdx} ] ${d.time.toLocaleString()}</strong>
-                            <span style="color:#ff2d55; font-weight:bold;"><span style="display:inline-block; transform:rotate(${d.heading}deg)">⬆</span> ${Math.round(d.heading)}°</span>
-                        </div>
-                        <img src="${d.url}">
-                        <div style="font-size:12px; color:#555;">座標: ${d.lat.toFixed(6)}, ${d.lng.toFixed(6)}</div>
-                        <div style="background:#f8f9fa; padding:10px; flex-grow:1; border-left:4px solid #007bff; margin-top:5px; font-size:13px; color:#333; white-space: pre-wrap; line-height:1.4;">${d.note || '(無現場筆記)'}</div>
-                    </div>`;
+                html += `<div class="report-item"><div style="display:flex; justify-content:space-between"><strong>[ ${gIdx} ] ${d.time.toLocaleString()}</strong><span style="color:red">⬆ ${Math.round(d.heading)}°</span></div><img src="${d.url}"><div style="font-size:12px">座標: ${d.lat.toFixed(6)}, ${d.lng.toFixed(6)}</div><div style="background:#f4f4f4; padding:8px; flex-grow:1; border-left:4px solid blue; font-size:13px; white-space:pre-wrap;">${d.note || '(無備註)'}</div></div>`;
             });
             html += `</div></div>`;
         }
